@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { SignInButton } from "@clerk/nextjs";
 import { FaRegHeart, FaHeart } from "react-icons/fa";
 import { LuTrash2, LuPenSquare } from "react-icons/lu";
+import { useState } from "react";
 
 type btnSize = "default" | "lg" | "sm";
 
@@ -113,5 +114,48 @@ export const ProductSignInButton = () => {
         sign in
       </Button>
     </SignInButton>
+  );
+};
+
+type PlaceOrderButtonProps = {
+  className?: string;
+  text?: string;
+  size?: btnSize;
+  action: () => Promise<void>;
+};
+
+export const PlaceOrderButton = ({
+  className = "",
+  text = "submit",
+  size = "lg",
+  action,
+}: PlaceOrderButtonProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    try {
+      await action(); // Execute the action passed as a prop
+    } finally {
+      setIsLoading(false); // Reset loading state after completion
+    }
+  };
+  return (
+    <Button
+      type="submit"
+      disabled={isLoading}
+      onClick={handleClick}
+      className={cn("capitalize", className)}
+      size={size}
+    >
+      {isLoading ? (
+        <>
+          <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+          Please wait...
+        </>
+      ) : (
+        text
+      )}
+    </Button>
   );
 };

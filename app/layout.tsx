@@ -5,6 +5,7 @@ import Navbar from "@/components/navbar/Navbar";
 import Container from "@/components/global/Container";
 import Providers from "./providers";
 import { ClerkProvider } from "@clerk/nextjs";
+import RazorpayScriptProvider from "@/components/razorpay/RazorpayScriptProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
+          <RazorpayScriptProvider />
           <Providers>
             <Navbar />
             <Container className="py-20">{children}</Container>

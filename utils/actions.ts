@@ -9,15 +9,19 @@ import {
   reviewSchema,
   validateWithZodSchema,
 } from "./schemas";
-import { log } from "console";
 import { deleteImage, uploadImage } from "./supabase";
 import { revalidatePath } from "next/cache";
 import { Cart } from "@prisma/client";
-// import { render } from "react-dom";
 
-const getAuthUser = async () => {
+export const getAuthUser = async (apiRoute = false) => {
   const user = await currentUser();
-  if (!user) redirect("/");
+  if (!user) {
+    if (apiRoute) {
+      throw new Error("Unauthorized");
+    }
+    redirect("/");
+  }
+  //   if (!user) redirect("/");
   return user;
 };
 
@@ -541,13 +545,29 @@ export const updateCartItemAction = async ({
   }
 };
 
-export const createOrderAction = async (prevState: any, formData: FormData) => {
-  const user = await getAuthUser();
+export const createOrderAction = async (
+  prevState?: any,
+  formData?: FormData
+) => {
+  const user = await getAuthUser(true);
+
+  let orderId: null | string = null;
+  let cartId: null | string = null;
+
   try {
     const cart = await fetchOrCreateCart({
       userId: user.id,
       errorOnFailure: true,
     });
+    cartId = cart.id;
+
+    // await db.order.deleteMany({
+    //   where: {
+    //     clerkId: user.id,
+    //     isPaid: false,
+    //   },
+    // });
+
     const order = await db.order.create({
       data: {
         clerkId: user.id,
@@ -558,15 +578,12 @@ export const createOrderAction = async (prevState: any, formData: FormData) => {
         email: user.emailAddresses[0].emailAddress,
       },
     });
-    await db.cart.delete({
-      where: {
-        id: cart.id,
-      },
-    });
+    orderId = order.id;
+
+    return { orderTotal: cart.orderTotal, orderId, cartId };
   } catch (error) {
     renderError(error);
   }
-  redirect("/orders");
 };
 
 export const fetchUserOrders = async () => {
@@ -596,4 +613,22 @@ export const fetchAdminOrders = async () => {
     },
   });
   return orders;
+};
+
+export const createRazorpayOrder = async (amount: number, origin: string) => {
+  try {
+    const response = await fetch(`${origin}/api/order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ amount, currency: "INR" }),
+    });
+
+    const razorpayOrder = await response.json();
+    return razorpayOrder;
+  } catch (error) {
+    console.error("Error creating Razorpay order:", error);
+    throw error;
+  }
 };
